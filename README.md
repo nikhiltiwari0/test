@@ -9,6 +9,24 @@ The core of this solution is the `SandboxProvider` abstraction (`src/interfaces.
 1.  **Local Docker**: For private, self-hosted training loops (Cost-effective, secure).
 2.  **Prime Intellect Cloud**: For managed, scalable rollouts (Easy to scale).
 
+### System Diagram
+
+```mermaid
+graph TD
+    User[User / RL Agent] -->|Actions| Env[GradingEnv]
+    Env -->|Tools| Provider{SandboxProvider}
+    
+    subgraph "Abstraction Layer"
+        Provider
+    end
+    
+    Provider -->|Create/Exec| Docker[DockerSandbox]
+    Provider -->|Create/Exec| Cloud[PrimeCloudSandbox]
+    
+    Docker -->|Runs| LocalContainer[Local Docker Container]
+    Cloud -->|Runs| RemoteVM[Prime Intellect VM]
+```
+
 ### Class Structure
 
 - **`GradingEnv` (in `src/env.py`)**: Inherits from `verifiers.StatefulToolEnv`. It defines the tools available to the agent (`read_submission`, `write_feedback`) but delegates execution to the provider.
@@ -17,6 +35,12 @@ The core of this solution is the `SandboxProvider` abstraction (`src/interfaces.
   - **Trajectory**: Did the agent actually read the files before grading?
   - **Outcome**: Did it generate the feedback files and final report?
   - **Policy**: Did it correctly apply the lateness penalty logic?
+
+---
+
+## 🎥 Video Demo
+
+[Watch the Demo Video](https://example.com/demo_video_link)
 
 ---
 
@@ -121,15 +145,8 @@ docker push yourusername/grading-rl-env:v1
 **Launch Pod:**
 
 ```bash
-# Update the image name and API key below!
-prime pods create \
-  --name grading-rl-rollout \
-  --image yourusername/grading-rl-env:v1 \
-  --gpu-type H100 \
-  --gpu-count 1 \
-  --memory 80 \
-  --env PRIME_API_KEY="your_key" \
-  --env SANDBOX_PROVIDER="prime"
+# Update pod.yaml with your API key first, or use environment variable substitution
+prime pods create -f pod.yaml
 ```
 
 **Monitor:**
@@ -151,13 +168,16 @@ educational-rl-env/
 ├── rollout.py              # Entry point for H100/RL Training
 ├── src/
 │   ├── agent.py            # The Teacher Agent logic
+│   ├── config.py           # Configuration & Constants
 │   ├── data_gen.py         # Data ingestion & docx conversion
 │   ├── env.py              # The Verifiers Environment definition
 │   ├── evaluators.py       # Scoring logic (Reward Function)
 │   ├── interfaces.py       # SandboxProvider Abstract Base Class
+│   ├── prompts.py          # Externalized Prompts
 │   └── providers/
 │       ├── docker_sandbox.py # Local implementation
-│       └── prime_sandbox.py  # Cloud implementation (Python-native injection)
+│       └── prime_sandbox.py  # Cloud implementation
+├── tests/                  # Integration & Unit Tests
 ├── Dockerfile.cloud        # For building the H100 image
 └── requirements.txt        # Dependencies
 ```
